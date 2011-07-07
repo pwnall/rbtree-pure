@@ -11,6 +11,10 @@ class Tree
   
   # The number of nodes in the tree.
   attr_reader :size
+  
+  # The tree's guard node.
+  attr_reader :guard
+  protected :guard
 
   # Creates a new tree.
   def initialize
@@ -18,6 +22,32 @@ class Tree
     @size = 0
     @root = @guard
   end
+  
+  # Makes a deep copy of the source's tree, but uses the original keys & values.
+  def initialize_copy(source)
+    super
+    @guard = GuardNode.new
+    @root = clone_tree source.root, source.guard
+  end
+  
+  # Produces a copy of a subtree.
+  #
+  # Arg:
+  #   root:: the root node of the subtree to be copied
+  #   source_guard:: the guard node of the RBTree containing root
+  #
+  # Returns the root of the new subtree.
+  def clone_tree(root, source_guard)
+    return @guard if root == source_guard
+    new_root = RBTree::Node.new root.key, root.value, @guard
+    new_root.color = root.color
+    new_root.left = clone_tree root.left, source_guard
+    new_root.left.parent = new_root unless new_root.left == @guard
+    new_root.right = clone_tree root.right, source_guard
+    new_root.right.parent = new_root unless new_root.right == @guard
+    new_root
+  end
+  private :clone_tree
 
   # Creates a new node holding a given key and value.
   def node(key, value)
@@ -100,19 +130,19 @@ class Tree
   end
 
   # The node with lowest key in the subtree rooted at the given node.
-  def minimum(x = root)
-    while !x.left.nil?
-      x = x.left
+  def minimum(node = root)
+    while !node.left.nil?
+      node = node.left
     end
-    x
+    node
   end
 
   # The node with the highest key in the subtree rooted at the given node.
-  def maximum(x = root)
-    while !x.right.nil?
-      x = x.right
+  def maximum(node = root)
+    while !node.right.nil?
+      node = node.right
     end
-    x
+    node
   end
 
   # The node with the lowest key that is higher than the given node's key.
@@ -140,28 +170,68 @@ class Tree
   end
 
   # Yields all nodes in the given node's subtree, in ascending key order.
-  def inorder(x = root)
-    x = self.minimum
-    until x.nil?
-      yield x
-      x = successor x
+  def inorder(node = root)
+    node = self.minimum
+    until node.nil?
+      yield node
+      node = successor node
     end
   end
 
   # Yields all nodes in the given node's subtree, in descending key order.
-  def reverse_inorder(x = root)
-    x = self.maximum
-    until x.nil?
-      yield x
-      x = predecessor x
+  def reverse_inorder(node = root)
+    node = self.maximum
+    until node.nil?
+      yield node
+      node = predecessor node
     end
   end
 
-  def search(key, x = root)
-    until x.nil? || x.key == key
-      x = (key < x.key) ? x.left : x.right
+  # Returns a node containing the given key or nil if no node contains the key.
+  def search(key, node = root)
+    until node.nil?
+      return node if node.key == key
+      node = (key < node.key) ? node.left : node.right
     end
-    x
+    nil
+  end
+  
+  # Returns the node with the smallest key that is >= the given key.
+  #
+  # Returns nil if called on an empty tree or the guard node.  
+  def lower_bound(key, node = root)
+    return nil if node.nil?
+    loop do
+      cmp = key <=> node.key
+      return node if cmp == 0
+      if cmp < 0
+        next_node = node.left
+        return node if next_node.nil?
+      else
+        next_node = node.right
+        return successor(node) if next_node.nil?
+      end
+      node = next_node
+    end
+  end
+  
+  # Returns a node with the largest key that is <= then given key.
+  #
+  # Returns nil if called on an empty tree or the guard node.  
+  def upper_bound(key, node = root)
+    return nil if node.nil?
+    loop do
+      cmp = key <=> node.key
+      return node if cmp == 0
+      if cmp < 0
+        next_node = node.left
+        return predecessor(node) if next_node.nil?
+      else
+        next_node = node.right
+        return node if next_node.nil?
+      end
+      node = next_node
+    end
   end
 
   # True if the tree has no nodes in it.
@@ -173,11 +243,11 @@ class Tree
   #
   # Red-black trees have the same number of black nodes on all paths from the
   # root to leaves, so this function is well defined.
-  def black_height(x = root)
+  def black_height(node = root)
     height = 0
-    while !x.nil?
-      x = x.left
-      height +=1 if x.nil? || x.black?
+    while !node.nil?
+      node = node.left
+      height += 1 if node.nil? || node.black?
     end
     height
   end

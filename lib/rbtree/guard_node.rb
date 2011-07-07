@@ -16,6 +16,10 @@ class GuardNode < Node
     true
   end
   
+  def to_a
+    nil
+  end
+  
   def inspect
     'RBTree::GuardNode'
   end
