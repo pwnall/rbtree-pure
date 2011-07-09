@@ -119,7 +119,10 @@ class Tree
       end
     end
 
-    z.key = y.key if y != z
+    if y != z
+      z.key = y.key
+      z.value = y.value
+    end
 
     if y.color == :black
       delete_fixup(x)

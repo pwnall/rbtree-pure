@@ -4,7 +4,7 @@ class MultiRBTree < RBTree
     super(default, &default_proc)
     @size = 0
   end
-    
+  
   def lower_bound(key)
     node = @tree.lower_bound(key)
     [node.key, node.value.first]
@@ -28,6 +28,28 @@ class MultiRBTree < RBTree
   end
 
   def to_rbtree
+    self
+  end
+
+  def replace(other)
+    raise TypeError, 'cannot modify rbtree in iteration' if @lock_count > 0
+    unless other.kind_of? RBTree
+      raise TypeError, "expected RBTree, got #{other.class}"
+    end
+
+    @tree = other.tree.dup
+    @default_proc = other.default_proc
+    @default = other.default
+    @cmp_proc = other.cmp_proc
+    @size = other.size
+    
+    unless other.instance_of? MultiRBTree
+      # Wrap values in arrays to convert RBTree -> MultiRBTree.
+      @tree.inorder do |node|
+        node.value = [node.value]
+      end
+    end
+    
     self
   end
 end
@@ -91,9 +113,9 @@ class MultiRBTree
     @tree.empty?
   end
 
-  # See Hash#clear  
+  # See Hash#clear
   def clear
-    @tree = RBTree::Tree.new
+    super
     @size = 0
   end
   
@@ -123,7 +145,6 @@ class MultiRBTree
       Enumerator.new self, :reverse_each
     end
   end
-  
   
   # See Hash#index
   def index(value)
@@ -159,25 +180,26 @@ class MultiRBTree
     unless node
       return block_given? ? yield : nil
     end
-    @tree.delete node
-    @size -= node.value.size
-    node.value
+    value = node.value.shift
+    @tree.delete node if node.value.empty?
+    @size -= 1
+    value
   end
   
   # See Hash#reject!
   def reject!
-    dead_nodes = []
     if block_given?
+      dead_nodes = []
       lock_changes do
         @tree.inorder do |node|
-          node.value.reject do |value|
+          node.value.reject! do |value|
             @size -= 1 if result = yield(node.key, value)
             result
           end
           dead_nodes << node if node.value.empty?
         end
-        dead_nodes.each { |node| @tree.delete node }
       end
+      dead_nodes.each { |node| @tree.delete node }
       dead_nodes.empty? ? nil : self
     else
       Enumerator.new self, :each
@@ -192,6 +214,18 @@ class MultiRBTree
     #       bug-for-bug
     # copy
   end
+  
+  # See Hash#each_key.
+  def each_key
+    if block_given?
+      lock_changes do
+        @tree.inorder { |node| node.value.each { yield node.key } }
+      end
+    else
+      Enumerator.new self, :each_key
+    end
+  end
+
   
   # See Hash#each_value.
   def each_value
@@ -213,13 +247,13 @@ class MultiRBTree
     if block_given?
       other.each do |key, value|
         if node = @tree.search(key)
-          node.value = yield key, node.value, value
+          self[key] = yield key, node.value.first, value
         else
           self[key] = value
         end
       end
     else
-      each { |key, value| self[key] = value }
+      other.each { |key, value| self[key] = value }
     end
     self
   end
@@ -248,6 +282,7 @@ class MultiRBTree
     "#<MultiRBTree: {#{contents}}, default=#{default_inspect}, cmp_proc=#{@cmp_proc.inspect}>"
   end
   
+  # :nodoc: custom pp output
   def pretty_print(q)
     q.group(1, "#<#{self.class.name}: ", '>') do
       q.group(1, '{', '}') do
@@ -275,6 +310,7 @@ class MultiRBTree
     end
   end
   
+  # :nodoc: custom pp output
   def pretty_print_cycle(q)
     q.text '"#<MultiRBTree: ...>"'
   end

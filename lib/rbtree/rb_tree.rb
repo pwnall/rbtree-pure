@@ -49,6 +49,9 @@ class RBTree
       unless hash.respond_to? :values_at
         raise ArgumentError, "expected a Hash-like argument"
       end
+      if self == RBTree && hash.instance_of?(MultiRBTree)
+        raise TypeError, "can't convert MultiRBTree to RBTree"
+      end
       tree = self.new
       begin
         hash.each { |k, v| tree[k] = v }
@@ -102,31 +105,26 @@ class RBTree
 
   # Internal version of bound that yields the corresponding nodes.  
   def bound_nodes(lower_key, upper_key = nil)
-    if upper_key
-      node = @tree.lower_bound lower_key
-    else
-      node = @tree.minimum
-      upper_key = lower_key
-    end
-    return block_given? ? self : [] unless node
+    upper_key ||= lower_key
+    node = @tree.lower_bound(lower_key)
+    return block_given? ? self : [] if node.nil?
 
     lock_changes do
       if @cmp_proc
         # Slow path
-        until node.nil? || @cmp_proc.call(node.key, upper_key) > 0
+        until node.nil? || @cmp_proc.call(upper_key, node.key) < 0
           yield node
           node = @tree.successor node
         end
       else
         # Fast path.
-        until node.nil? || node.key > upper_key
+        until node.nil? || upper_key < node.key
           yield node
           node = @tree.successor node
         end
       end
     end
   end
-    
   
   def to_rbtree
     self
@@ -167,7 +165,7 @@ class RBTree
   
   def replace(other)
     raise TypeError, 'cannot modify rbtree in iteration' if @lock_count > 0
-    unless other.kind_of? RBTree
+    unless other.instance_of? RBTree
       raise TypeError, "expected RBTree, got #{other.class}"
     end
     
@@ -175,6 +173,7 @@ class RBTree
     @default_proc = other.default_proc
     @default = other.default
     @cmp_proc = other.cmp_proc
+    self
   end
 end
 
@@ -240,7 +239,8 @@ class RBTree
   
   # See Hash#==
   def ==(other)
-    return false unless other.instance_of?(RBTree)
+    return false unless other.kind_of?(RBTree)
+    return false unless other.size == self.size
     return false unless other.cmp_proc == @cmp_proc
     
     ary = self.to_a
@@ -319,14 +319,14 @@ class RBTree
   
   # See Hash#reject!
   def reject!
-    dead_nodes = []
     if block_given?
+      dead_nodes = []
       lock_changes do
         @tree.inorder do |node|
           dead_nodes << node if yield node.key, node.value
         end
-        dead_nodes.each { |node| @tree.delete node }
       end
+      dead_nodes.each { |node| @tree.delete node }
       dead_nodes.empty? ? nil : self
     else
       Enumerator.new self, :each

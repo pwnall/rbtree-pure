@@ -5,7 +5,7 @@ class RBTree
 #
 # Nodes should only be manipulated directly by the RedBlackTree class.
 class Node
-  attr_reader :key
+  attr_accessor :key
   attr_accessor :value
 
   attr_accessor :color
@@ -15,7 +15,7 @@ class Node
 
   # Creates a new node.
   #
-  # New tree nodes are red by default. The guard 
+  # New tree nodes are red by default.
   def initialize(key, value, guard)
     @color = :red
     @key = key
@@ -49,7 +49,7 @@ class Node
   
   def inspect
     <<ENDI
-<RBTree::Node (#{@color}) #{@value.inspect}
+<RBTree::Node (#{@color}) #{@key.inspect} -> #{@value.inspect}
   Left: [#{@left.inspect.gsub!("\n", "\n  ")}]
   Right: [#{@right.inspect.gsub!("\n", "\n  ")}]>
 ENDI
