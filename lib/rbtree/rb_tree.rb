@@ -1,4 +1,4 @@
-# Sorted hash that supports multiple keys for its values.
+# Sorted hash.
 class RBTree
   include Enumerable
   
@@ -89,6 +89,19 @@ class RBTree
   end
   
   def bound(lower_key, upper_key = nil)
+    result = []
+    bound_nodes lower_key, upper_key do |node|
+      if block_given?
+        yield node.key, node.value
+      else
+        result << node.to_a
+      end
+    end
+    block_given? ? self : result
+  end
+
+  # Internal version of bound that yields the corresponding nodes.  
+  def bound_nodes(lower_key, upper_key = nil)
     if upper_key
       node = @tree.lower_bound lower_key
     else
@@ -97,32 +110,23 @@ class RBTree
     end
     return block_given? ? self : [] unless node
 
-    result = []
     lock_changes do
       if @cmp_proc
         # Slow path
         until node.nil? || @cmp_proc.call(node.key, upper_key) > 0
-          if block_given?
-            yield node.to_a
-          else
-            result << node.to_a
-          end
+          yield node
           node = @tree.successor node
         end
       else
         # Fast path.
         until node.nil? || node.key > upper_key
-          if block_given?
-            yield node.to_a
-          else
-            result << node.to_a
-          end
+          yield node
           node = @tree.successor node
         end
       end
     end
-    block_given? ? self : result
   end
+    
   
   def to_rbtree
     self
@@ -238,17 +242,10 @@ class RBTree
   def ==(other)
     return false unless other.instance_of?(RBTree)
     return false unless other.cmp_proc == @cmp_proc
-    return false unless other.size == size
-
-    lock_changes do
-      other_tree = other.tree
-      other_node = other_tree.minimum
-      @tree.inorder do |node|
-        return false if node.key != other_node.key ||
-                        node.value != other_node.value
-        other_node = other_tree.successor other_node
-      end
-    end
+    
+    ary = self.to_a
+    other_ary = other.to_a
+    ary.each_with_index { |v, i| return false unless other_ary[i] == v }
     true
   end
   
@@ -256,7 +253,7 @@ class RBTree
   def each
     if block_given?
       lock_changes do
-        @tree.inorder { |node| yield *node.to_a }
+        @tree.inorder { |node| yield node.key, node.value }
       end
     else
       Enumerator.new self, :each
@@ -268,7 +265,7 @@ class RBTree
   def reverse_each
     if block_given?
       lock_changes do
-        @tree.reverse_inorder { |node| yield *node.to_a }
+        @tree.reverse_inorder { |node| yield node.key, node.value }
       end
     else
       Enumerator.new self, :reverse_each
@@ -278,7 +275,7 @@ class RBTree
   
   # See Hash#index
   def index(value)
-    @tree.inorder { |node| return node.key if node.value == value }
+    each { |k, v| return k if value == v }
     nil
   end
   
@@ -315,19 +312,9 @@ class RBTree
   end
   
   # See Hash#delete_if
-  def delete_if
-    dead_nodes = []
-    if block_given?
-      lock_changes do
-        @tree.inorder do |node|
-          dead_nodes << node if yield node.key, node.value
-        end
-        dead_nodes.each { |node| @tree.delete node }
-      end
-      self
-    else
-      Enumerator.new self, :each
-    end
+  def delete_if(&block)
+    reject!(&block)
+    self
   end
   
   # See Hash#reject!
@@ -380,18 +367,14 @@ class RBTree
   # See Hash#keys.
   def keys
     result = Array.new
-    lock_changes do
-      @tree.inorder { |node| result << node.key }
-    end
+    each_key { |key| result << key }
     result
   end
   
   # See Hash#values.
   def values
     result = Array.new
-    lock_changes do
-      @tree.inorder { |node| result << node.value }
-    end
+    each_value { |value| result << value }
     result
   end
   
@@ -403,15 +386,15 @@ class RBTree
   # See Hash#has_value?
   def has_value?(value)
     lock_changes do
-      tree.inorder { |node| return true if value == node.value }
+      each_value { |v| return true if value == v }
     end
     false
   end
   
   # See Hash#invert
   def invert
-    tree = RBTree.new
-    @tree.inorder { |node| tree[node.value] = node.key }
+    tree = self.class.new
+    each { |key, value| tree[value] = key }
     tree
   end
   
@@ -427,16 +410,15 @@ class RBTree
     end
     
     if block_given?
-      other.tree.inorder do |other_node|
-        key = other_node.key
+      other.each do |key, value|
         if node = @tree.search(key)
-          node.value = yield key, node.value, other_node.value
+          node.value = yield key, node.value, value
         else
-          self[key] = other_node.value
+          self[key] = value
         end
       end
     else
-      other.tree.inorder { |node| self[node.key] = node.value }
+      other.each { |key, value| self[key] = value }
     end
     self
   end
@@ -500,4 +482,4 @@ class RBTree
   def pretty_print_cycle(q)
     q.text '"#<RBTree: ...>"'
   end
-end
+end  # class RBTree::RBTree
