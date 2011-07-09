@@ -46,6 +46,9 @@ class RBTree
   def self.[](*key_values)
     if key_values.length == 1
       hash = key_values.first
+      unless hash.respond_to? :values_at
+        raise ArgumentError, "expected a Hash-like argument"
+      end
       tree = self.new
       begin
         hash.each { |k, v| tree[k] = v }
@@ -253,7 +256,7 @@ class RBTree
   def each
     if block_given?
       lock_changes do
-        @tree.inorder { |node| yield node.to_a }
+        @tree.inorder { |node| yield *node.to_a }
       end
     else
       Enumerator.new self, :each
@@ -265,7 +268,7 @@ class RBTree
   def reverse_each
     if block_given?
       lock_changes do
-        @tree.reverse_inorder { |node| yield node.to_a }
+        @tree.reverse_inorder { |node| yield *node.to_a }
       end
     else
       Enumerator.new self, :reverse_each
@@ -376,12 +379,20 @@ class RBTree
   
   # See Hash#keys.
   def keys
-    map(&:first)
+    result = Array.new
+    lock_changes do
+      @tree.inorder { |node| result << node.key }
+    end
+    result
   end
   
   # See Hash#values.
   def values
-    map(&:last)
+    result = Array.new
+    lock_changes do
+      @tree.inorder { |node| result << node.value }
+    end
+    result
   end
   
   # See Hash#has_key?
@@ -445,6 +456,13 @@ class RBTree
   
   # A new Hash with the same contents and defaults as this RBTree instance.
   def to_hash
+    if @default_proc && !Hash.method_defined?(:default_proc=)
+      # Slow path for default block and Ruby 1.8.7
+      hash = Hash.new &@default_proc
+      each { |key, value| hash[key] = value }
+      return hash
+    end
+
     hash = Hash[to_a]
     if @default_proc
       hash.default_proc = @default_proc if hash.respond_to? :default_proc=
@@ -466,6 +484,20 @@ class RBTree
   end
   
   def pretty_print(q)
-    q.text inspect
+    q.group(1, '#<RBTree: ', '>') do
+      q.pp_hash self
+      q.text ','
+      q.breakable ' '
+      q.text 'default='
+      q.pp default
+      q.text ','
+      q.breakable ' '
+      q.text 'cmp_proc='
+      q.pp cmp_proc
+    end
+  end
+  
+  def pretty_print_cycle(q)
+    q.text '"#<RBTree: ...>"'
   end
 end
