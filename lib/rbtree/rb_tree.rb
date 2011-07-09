@@ -40,12 +40,18 @@ class RBTree
   def initialize_copy(source)
     super
     @tree = source.tree.dup
+    @lock_count = 0
   end
   
   def self.[](*key_values)
     if key_values.length == 1
+      hash = key_values.first
       tree = self.new
-      key_values.first.each { |k, v| tree[k] = v }
+      begin
+        hash.each { |k, v| tree[k] = v }
+      rescue NoMethodError
+        raise ArgumentError, "expected a Hash-like argument"
+      end
       return tree
     end
     
@@ -90,13 +96,26 @@ class RBTree
 
     result = []
     lock_changes do
-      until node.nil? || node.key > upper_key
-        if block_given?
-          yield node.to_a
-        else
-          result << node.to_a
+      if @cmp_proc
+        # Slow path
+        until node.nil? || @cmp_proc.call(node.key, upper_key) > 0
+          if block_given?
+            yield node.to_a
+          else
+            result << node.to_a
+          end
+          node = @tree.successor node
         end
-        node = @tree.successor node
+      else
+        # Fast path.
+        until node.nil? || node.key > upper_key
+          if block_given?
+            yield node.to_a
+          else
+            result << node.to_a
+          end
+          node = @tree.successor node
+        end
       end
     end
     block_given? ? self : result
@@ -104,6 +123,51 @@ class RBTree
   
   def to_rbtree
     self
+  end
+  
+  def readjust(*proc_arg, &new_cmp_proc)
+    raise TypeError, 'cannot modify rbtree in iteration' if @lock_count > 0
+    
+    if new_cmp_proc
+      cmp_proc = new_cmp_proc
+      unless proc_arg.empty?
+        raise ArgumentError, "expected 0 arguments when given a block"
+      end
+    else
+      unless proc_arg.length <= 1
+        raise ArgumentError, "expected 1 arguments (given #{proc_arg.length})"        
+      end
+      unless proc_arg.first.respond_to?(:call) || proc_arg.first.nil?
+        raise TypeError, "expected a proc argument"
+      end
+      cmp_proc = proc_arg.first
+    end
+    
+    lock_changes do
+      if cmp_proc
+        new_tree = RBTree::TreeCmp.new(&cmp_proc)
+      else
+        new_tree = RBTree::Tree.new
+      end
+      
+      @tree.inorder do |node|
+        new_tree.insert new_tree.node(node.key, node.value)
+      end
+      @tree = new_tree
+      @cmp_proc = cmp_proc
+    end
+  end
+  
+  def replace(other)
+    raise TypeError, 'cannot modify rbtree in iteration' if @lock_count > 0
+    unless other.kind_of? RBTree
+      raise TypeError, "expected RBTree, got #{other.class}"
+    end
+    
+    @tree = other.tree.dup
+    @default_proc = other.default_proc
+    @default = other.default
+    @cmp_proc = other.cmp_proc
   end
 end
 
@@ -170,12 +234,17 @@ class RBTree
   # See Hash#==
   def ==(other)
     return false unless other.instance_of?(RBTree)
+    return false unless other.cmp_proc == @cmp_proc
     return false unless other.size == size
 
-    enumerator = other.each
-    each do |key, value|
-      pair = enumerator.next
-      return false if pair.first != key || pair.last != value
+    lock_changes do
+      other_tree = other.tree
+      other_node = other_tree.minimum
+      @tree.inorder do |node|
+        return false if node.key != other_node.key ||
+                        node.value != other_node.value
+        other_node = other_tree.successor other_node
+      end
     end
     true
   end
@@ -378,7 +447,7 @@ class RBTree
   def to_hash
     hash = Hash[to_a]
     if @default_proc
-      hash.default_proc = @default_proc
+      hash.default_proc = @default_proc if hash.respond_to? :default_proc=
     else
       hash.default = @default
     end
@@ -387,7 +456,16 @@ class RBTree
   
   # :nodoc:
   def inspect
-    contents = map { |k, v| "#{k.inspect}=>#{v.inspect}" }.join(', ')
-    "#<RBTree: {#{contents}}, default=#{@default.inspect}, cmp_proc=#{@cmp_proc.inspect}>"
+    contents = map { |k, v|
+      k_inspect = k.equal?(self) ? '#<RBTree: ...>' : k.inspect
+      v_inspect = v.equal?(self) ? '#<RBTree: ...>' : v.inspect
+      "#{k_inspect}=>#{v_inspect}"
+    }.join(', ')
+    default_inspect = default.equal?(self) ? '#<RBTree: ...>' : default.inspect
+    "#<RBTree: {#{contents}}, default=#{default_inspect}, cmp_proc=#{@cmp_proc.inspect}>"
+  end
+  
+  def pretty_print(q)
+    q.text inspect
   end
 end

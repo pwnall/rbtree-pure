@@ -147,7 +147,7 @@ class Tree
 
   # The node with the lowest key that is higher than the given node's key.
   def successor(x)
-    return minimum(x.right) if !x.right.nil?
+    return minimum(x.right) unless x.right.nil?
     
     y = x.parent
     while !y.nil? && x == y.right
@@ -159,7 +159,7 @@ class Tree
 
   # The node with the highest key that is lower than the given node's key.
   def predecessor(x)
-    return maximum(x.left) if !x.left.nil?
+    return maximum(x.left) unless x.left.nil?
     
     y = x.parent
     while !y.nil? && x == y.left
@@ -191,7 +191,7 @@ class Tree
   def search(key, node = root)
     until node.nil?
       return node if node.key == key
-      node = (key < node.key) ? node.left : node.right
+      node = ((key <=> node.key) < 0) ? node.left : node.right
     end
     nil
   end
@@ -314,7 +314,7 @@ private
     if y.nil?
       @root = z
     else
-      key < y.key ? y.left = z : y.right = z
+      ((key <=> y.key) < 0) ? y.left = z : y.right = z
     end
     @size += 1
     z

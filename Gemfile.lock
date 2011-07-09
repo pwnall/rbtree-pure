@@ -2,7 +2,7 @@ GEM
   remote: http://rubygems.org/
   specs:
     git (1.2.5)
-    jeweler (1.6.3)
+    jeweler (1.6.4)
       bundler (~> 1.0)
       git (>= 1.2.5)
       rake
