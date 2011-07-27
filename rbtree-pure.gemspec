@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rbtree-pure}
-  s.version = "0.1.0"
+  s.version = "0.1.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = [%q{Victor Costan}]
-  s.date = %q{2011-07-09}
+  s.date = %q{2011-07-27}
   s.description = %q{This is a pure-ruby implementation of the rbtree gem.}
   s.email = %q{victor@costan.us}
   s.extra_rdoc_files = [
@@ -32,9 +32,7 @@ Gem::Specification.new do |s|
     "lib/rbtree/rb_tree.rb",
     "lib/rbtree/tree.rb",
     "lib/rbtree/tree_cmp.rb",
-    "old_ext/dict.c",
-    "old_ext/dict.h",
-    "old_ext/rbtree.c",
+    "rbtree-pure.gemspec",
     "test/helper.rb",
     "test/multi_rbtree_test.rb",
     "test/rbtree_test.rb"
