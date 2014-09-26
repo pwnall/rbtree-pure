@@ -268,7 +268,7 @@ class RBTree
         @tree.inorder(node) { |node| yield node.key, node.value }
       end
     else
-      self.to_enum(:each_from)
+      self.to_enum(:each_from, key)
     end
   end
 
