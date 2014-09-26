@@ -128,7 +128,7 @@ class MultiRBTree
         end
       end
     else
-      Enumerator.new self, :each
+      self.to_enum(:each)
     end
   end
   alias :each_pair :each
@@ -142,7 +142,7 @@ class MultiRBTree
         end
       end
     else
-      Enumerator.new self, :reverse_each
+      self.to_enum(:reverse_each)
     end
   end
   
@@ -202,7 +202,7 @@ class MultiRBTree
       dead_nodes.each { |node| @tree.delete node }
       dead_nodes.empty? ? nil : self
     else
-      Enumerator.new self, :each
+      self.to_enum(:each)
     end
   end
   
@@ -222,7 +222,7 @@ class MultiRBTree
         @tree.inorder { |node| node.value.each { yield node.key } }
       end
     else
-      Enumerator.new self, :each_key
+      self.to_enum(:each_key)
     end
   end
 
@@ -234,7 +234,7 @@ class MultiRBTree
         @tree.inorder { |node| node.value.each { |value| yield value } }
       end
     else
-      Enumerator.new self, :each_value
+      self.to_enum(:each_value)
     end
   end
   

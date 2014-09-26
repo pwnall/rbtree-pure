@@ -173,8 +173,8 @@ class Tree
   end
 
   # Yields all nodes in the given node's subtree, in ascending key order.
-  def inorder(node = root)
-    node = self.minimum
+  def inorder(node = nil)
+    node = node || self.minimum
     until node.nil?
       yield node
       node = successor node
@@ -182,8 +182,8 @@ class Tree
   end
 
   # Yields all nodes in the given node's subtree, in descending key order.
-  def reverse_inorder(node = root)
-    node = self.maximum
+  def reverse_inorder(node = nil)
+    node = node || self.maximum
     until node.nil?
       yield node
       node = predecessor node
