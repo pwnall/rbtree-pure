@@ -273,6 +273,31 @@ class RBTreeTest < Test::Unit::TestCase
     end
   end
   
+  def test_each_from
+    ret = []
+    @rbtree.each_from("c") {|key, val| ret << key << val }
+    assert_equal(%w(c C d D), ret)
+    
+    assert_raises(TypeError) {
+      @rbtree.each_from("c") { @rbtree["e"] = "E" }
+    }
+    assert_equal(4, @rbtree.size)
+    
+    @rbtree.each_from("a") {
+      @rbtree.each_from("b") {}
+      assert_raises(TypeError) {
+        @rbtree["e"] = "E"
+      }
+      break
+    }
+    assert_equal(4, @rbtree.size)
+    
+    if defined?(Enumerable::Enumerator)
+      enumerator = @rbtree.each_from("c")
+      assert_equal(%w(c C d D), enumerator.map.flatten)
+    end
+  end
+  
   def test_each_pair
     ret = []
     @rbtree.each_pair {|key, val| ret << key << val }

@@ -261,6 +261,17 @@ class RBTree
   end
   alias :each_pair :each
   
+  def each_from(key)
+    node = @tree.search(key)
+    if block_given?
+      lock_changes do
+        @tree.inorder(node) { |node| yield node.key, node.value }
+      end
+    else
+      self.to_enum(:each_from)
+    end
+  end
+
   # See Hash#reverse_each
   def reverse_each
     if block_given?
