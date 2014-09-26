@@ -256,7 +256,7 @@ class RBTree
         @tree.inorder { |node| yield node.key, node.value }
       end
     else
-      Enumerator.new self, :each
+      self.to_enum(:each)
     end
   end
   alias :each_pair :each
@@ -268,7 +268,7 @@ class RBTree
         @tree.reverse_inorder { |node| yield node.key, node.value }
       end
     else
-      Enumerator.new self, :reverse_each
+      self.to_enum(:reverse_each)
     end
   end
   
@@ -329,7 +329,7 @@ class RBTree
       dead_nodes.each { |node| @tree.delete node }
       dead_nodes.empty? ? nil : self
     else
-      Enumerator.new self, :each
+      self.to_enum(:each)
     end
   end
   
@@ -349,7 +349,7 @@ class RBTree
         @tree.inorder { |node| yield node.key }
       end
     else
-      Enumerator.new self, :each_key
+      self.to_enum(:each_key)
     end
   end
 
@@ -360,7 +360,7 @@ class RBTree
         @tree.inorder { |node| yield node.value }
       end
     else
-      Enumerator.new self, :each_value
+      self.to_enum(:each_value)
     end
   end
   
