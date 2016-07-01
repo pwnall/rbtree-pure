@@ -8,10 +8,10 @@ class RBTree
 class Tree
   # The tree's root node.
   attr_reader :root
-  
+
   # The number of nodes in the tree.
   attr_reader :size
-  
+
   # The tree's guard node.
   attr_reader :guard
   protected :guard
@@ -22,14 +22,14 @@ class Tree
     @size = 0
     @root = @guard
   end
-  
+
   # Makes a deep copy of the source's tree, but uses the original keys & values.
   def initialize_copy(source)
     super
     @guard = GuardNode.new
     @root = clone_tree source.root, source.guard
   end
-  
+
   # Produces a copy of a subtree.
   #
   # Arg:
@@ -151,7 +151,7 @@ class Tree
   # The node with the lowest key that is higher than the given node's key.
   def successor(x)
     return minimum(x.right) unless x.right.nil?
-    
+
     y = x.parent
     while !y.nil? && x == y.right
       x = y
@@ -163,7 +163,7 @@ class Tree
   # The node with the highest key that is lower than the given node's key.
   def predecessor(x)
     return maximum(x.left) unless x.left.nil?
-    
+
     y = x.parent
     while !y.nil? && x == y.left
       x = y
@@ -198,10 +198,10 @@ class Tree
     end
     nil
   end
-  
+
   # Returns the node with the smallest key that is >= the given key.
   #
-  # Returns nil if called on an empty tree or the guard node.  
+  # Returns nil if called on an empty tree or the guard node.
   def lower_bound(key, node = root)
     return nil if node.nil?
     loop do
@@ -217,10 +217,10 @@ class Tree
       node = next_node
     end
   end
-  
+
   # Returns a node with the largest key that is <= then given key.
   #
-  # Returns nil if called on an empty tree or the guard node.  
+  # Returns nil if called on an empty tree or the guard node.
   def upper_bound(key, node = root)
     return nil if node.nil?
     loop do

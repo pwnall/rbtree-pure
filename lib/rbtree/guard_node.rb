@@ -1,6 +1,6 @@
 # :nodoc: namespace
 class RBTree
-  
+
 # Node instance used as a guard.
 class GuardNode < Node
   def initialize
@@ -15,11 +15,11 @@ class GuardNode < Node
   def nil?
     true
   end
-  
+
   def to_a
     nil
   end
-  
+
   def inspect
     'RBTree::GuardNode'
   end

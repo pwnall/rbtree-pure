@@ -12,7 +12,7 @@ class TreeCmp < Tree
     @size = 0
     @root = @guard
   end
-  
+
   # Returns a node containing the given key or nil if no node contains the key.
   def search(key, node = root)
     until node.nil?
@@ -21,10 +21,10 @@ class TreeCmp < Tree
     end
     nil
   end
-  
+
   # Returns the node with the smallest key that is >= the given key.
   #
-  # Returns nil if called on an empty tree or the guard node.  
+  # Returns nil if called on an empty tree or the guard node.
   def lower_bound(key, node = root)
     return nil if node.nil?
     loop do
@@ -40,10 +40,10 @@ class TreeCmp < Tree
       node = next_node
     end
   end
-  
+
   # Returns a node with the largest key that is <= then given key.
   #
-  # Returns nil if called on an empty tree or the guard node.  
+  # Returns nil if called on an empty tree or the guard node.
   def upper_bound(key, node = root)
     return nil if node.nil?
     loop do

@@ -1,5 +1,5 @@
 # :nodoc: namespace
-class RBTree  
+class RBTree
 end
 
 require 'rbtree/node.rb'
