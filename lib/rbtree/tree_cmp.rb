@@ -16,7 +16,7 @@ class TreeCmp < Tree
   # Returns a node containing the given key or nil if no node contains the key.
   def search(key, node = root)
     until node.nil?
-      return node if node.key == key
+      return node if node.key.eql?(key)
       node = @cmp_proc.call(key, node.key) < 0 ? node.left : node.right
     end
     nil

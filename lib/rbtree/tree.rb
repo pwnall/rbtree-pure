@@ -193,8 +193,10 @@ class Tree
   # Returns a node containing the given key or nil if no node contains the key.
   def search(key, node = root)
     until node.nil?
-      return node if node.key == key
-      node = ((key <=> node.key) < 0) ? node.left : node.right
+      comparison = node.key <=> key
+      return node if comparison == 0
+      raise "#{key.inspect} and #{node.key.inspect} are not comparable" if comparison.nil?
+      node = (comparison > 0) ? node.left : node.right
     end
     nil
   end
@@ -205,9 +207,9 @@ class Tree
   def lower_bound(key, node = root)
     return nil if node.nil?
     loop do
-      cmp = key <=> node.key
+      cmp = node.key <=> key
       return node if cmp == 0
-      if cmp < 0
+      if cmp > 0
         next_node = node.left
         return node if next_node.nil?
       else
@@ -224,9 +226,9 @@ class Tree
   def upper_bound(key, node = root)
     return nil if node.nil?
     loop do
-      cmp = key <=> node.key
+      cmp = node.key <=> key
       return node if cmp == 0
-      if cmp < 0
+      if cmp > 0
         next_node = node.left
         return predecessor(node) if next_node.nil?
       else

@@ -275,7 +275,7 @@ class RBTree
 
   # See Hash#index
   def index(value)
-    each { |k, v| return k if value == v }
+    each { |k, v| return k if value.eql? v }
     nil
   end
 
