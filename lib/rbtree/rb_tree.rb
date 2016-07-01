@@ -440,7 +440,7 @@ class RBTree
   def to_hash
     if @default_proc && !Hash.method_defined?(:default_proc=)
       # Slow path for default block and Ruby 1.8.7
-      hash = Hash.new &@default_proc
+      hash = Hash.new(&@default_proc)
       each { |key, value| hash[key] = value }
       return hash
     end
