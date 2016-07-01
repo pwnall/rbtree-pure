@@ -405,11 +405,11 @@ class RBTree
 
   # See Hash#merge!
   def merge!(other)
-    unless other.instance_of? RBTree
-      raise TypeError, "wrong argument type #{other.class} (expected RBTree)"
-    end
-
     if block_given?
+      unless other.kind_of? RBTree
+        raise TypeError, "wrong argument type #{other.class} (expected RBTree)"
+      end
+
       other.each do |key, value|
         if node = @tree.search(key)
           node.value = yield key, node.value, value
@@ -418,6 +418,9 @@ class RBTree
         end
       end
     else
+      unless other.respond_to?(:each)
+        raise TypeError, "wrong argument type #{other.class} (expected Enumerable)"
+      end
       other.each { |key, value| self[key] = value }
     end
     self

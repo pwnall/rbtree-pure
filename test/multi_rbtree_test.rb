@@ -105,7 +105,7 @@ class MultiRBTreeTest < Test::Unit::TestCase
   def test_update
     assert_equal(MultiRBTree[*%w(a A b B)],
                  MultiRBTree[*%w(a A)].update(RBTree[*%w(b B)]))
-    assert_raises(TypeError) {
+    assert_nothing_raised {
       RBTree[*%w(a A)].update(MultiRBTree[*%w(b B)])
     }
   end
