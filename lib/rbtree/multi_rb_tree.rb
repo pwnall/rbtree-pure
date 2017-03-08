@@ -4,17 +4,17 @@ class MultiRBTree < RBTree
     super(default, &default_proc)
     @size = 0
   end
-  
+
   def lower_bound(key)
     node = @tree.lower_bound(key)
     [node.key, node.value.first]
   end
-  
+
   def upper_bound(key)
     node = @tree.lower_bound(key)
     [node.key, node.value.last]
   end
-  
+
   def bound(lower_key, upper_key = nil)
     result = []
     bound_nodes lower_key, upper_key do |node|
@@ -42,14 +42,14 @@ class MultiRBTree < RBTree
     @default = other.default
     @cmp_proc = other.cmp_proc
     @size = other.size
-    
+
     unless other.instance_of? MultiRBTree
       # Wrap values in arrays to convert RBTree -> MultiRBTree.
       @tree.inorder do |node|
         node.value = [node.value]
       end
     end
-    
+
     self
   end
 end
@@ -61,25 +61,25 @@ class MultiRBTree
     node = @tree.minimum
     node.nil? ? default : [node.key, node.value.first]
   end
-  
+
   # The [key, value] for the largest key in the tree.
   def last
     node = @tree.maximum
     node.nil? ? default : [node.key, node.value.last]
   end
-  
+
   # Removes the largest key in the tree.
   def pop
-    return default if (node = @tree.maximum).nil? 
+    return default if (node = @tree.maximum).nil?
     value = node.value.pop
     @tree.delete node if node.value.empty?
     @size -= 1
     [node.key, value]
   end
-  
+
   # Removes the smallest key in the tree.
   def shift
-    return default if (node = @tree.minimum).nil? 
+    return default if (node = @tree.minimum).nil?
     value = node.value.shift
     @tree.delete node if node.value.empty?
     @size -= 1
@@ -94,7 +94,7 @@ class MultiRBTree
     node = tree.search key
     node ? node.value.first : default(key)
   end
-  
+
   # See Hash#[]=
   def []=(key, value)
     raise TypeError, 'cannot modify rbtree in iteration' if @lock_count > 0
@@ -104,10 +104,10 @@ class MultiRBTree
     @size += 1
     value
   end
-  
+
   # See Hash#size
   attr_reader :size
-  
+
   # See Hash#empty
   def empty?
     @tree.empty?
@@ -118,7 +118,7 @@ class MultiRBTree
     super
     @size = 0
   end
-  
+
   # See Hash#each
   def each
     if block_given?
@@ -132,7 +132,7 @@ class MultiRBTree
     end
   end
   alias :each_pair :each
-  
+
   # See Hash#reverse_each
   def reverse_each
     if block_given?
@@ -145,13 +145,13 @@ class MultiRBTree
       Enumerator.new self, :reverse_each
     end
   end
-  
+
   # See Hash#index
   def index(value)
     each { |k, v| return k if v.include? value }
     nil
   end
-  
+
   # See Hash#fetch
   def fetch(key, *default)
     if default.length > 1
@@ -160,7 +160,7 @@ class MultiRBTree
     if default.length == 1 && block_given?
       $stderr << "warning: block supersedes default value argument"
     end
-    
+
     node = tree.search key
     return node.value.first if node
     if block_given?
@@ -173,7 +173,7 @@ class MultiRBTree
       end
     end
   end
-  
+
   # See Hash#delete
   def delete(key)
     node = @tree.search key
@@ -185,7 +185,7 @@ class MultiRBTree
     @size -= 1
     value
   end
-  
+
   # See Hash#reject!
   def reject!
     if block_given?
@@ -205,7 +205,7 @@ class MultiRBTree
       Enumerator.new self, :each
     end
   end
-  
+
   # See Hash#reject
   def reject(&block)
     copy = self.dup
@@ -214,7 +214,7 @@ class MultiRBTree
     #       bug-for-bug
     # copy
   end
-  
+
   # See Hash#each_key.
   def each_key
     if block_given?
@@ -226,7 +226,7 @@ class MultiRBTree
     end
   end
 
-  
+
   # See Hash#each_value.
   def each_value
     if block_given?
@@ -237,13 +237,13 @@ class MultiRBTree
       Enumerator.new self, :each_value
     end
   end
-  
+
   # See Hash#merge!
   def merge!(other)
     unless other.instance_of? RBTree
       raise TypeError, "wrong argument type #{other.class} (expected RBTree)"
     end
-    
+
     if block_given?
       other.each do |key, value|
         if node = @tree.search(key)
@@ -258,19 +258,19 @@ class MultiRBTree
     self
   end
   alias :update :merge!
-  
+
   # See Hash#merge
   def merge(other)
     copy = self.dup
     copy.merge! other
     copy
   end
-  
+
   # A new Hash with the same contents and defaults as this RBTree instance.
   def to_hash
     raise TypeError, "can't convert MultiRBTree to Hash"
   end
-  
+
   # :nodoc:
   def inspect
     contents = map { |k, v|
@@ -281,7 +281,7 @@ class MultiRBTree
     default_inspect = default.equal?(self) ? '#<RBTree: ...>' : default.inspect
     "#<MultiRBTree: {#{contents}}, default=#{default_inspect}, cmp_proc=#{@cmp_proc.inspect}>"
   end
-  
+
   # :nodoc: custom pp output
   def pretty_print(q)
     q.group(1, "#<#{self.class.name}: ", '>') do
@@ -309,7 +309,7 @@ class MultiRBTree
       q.pp cmp_proc
     end
   end
-  
+
   # :nodoc: custom pp output
   def pretty_print_cycle(q)
     q.text '"#<MultiRBTree: ...>"'

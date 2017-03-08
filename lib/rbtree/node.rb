@@ -32,21 +32,21 @@ class Node
   def red?
     @color == :red
   end
-  
+
   # Returns an array of the node's [key, value].
   #
   # This method is used for nodes in a RBTree's tree.
   def to_a
     [@key, @value]
   end
-  
+
   # Returns an array of the node's [key, first value].
   #
   # This method is used for nodes in a MultiRBTree's tree.
   def to_single_a
     [@key, @value.first]
   end
-  
+
   def inspect
     <<ENDI
 <RBTree::Node (#{@color}) #{@key.inspect} -> #{@value.inspect}
@@ -55,5 +55,5 @@ class Node
 ENDI
   end
 end  # class RBTree::Node
-  
+
 end  # namespace RBTree
